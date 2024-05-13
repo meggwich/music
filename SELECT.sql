@@ -64,8 +64,9 @@ JOIN artists ar ON aa.artist_id = ar.ID
 WHERE ar.name = 'John Lennon';
 
 --Выполнение SELECT-запросов (зададние 4(необязательное))
+--вложенная часть совсем не нужна, т.к. после всех объединений можно сгруппировать результат по альбомам и сделать отбор при помощи HAVING
 -- Названия альбомов, в которых присутствуют исполнители более чем одного жанра
-SELECT DISTINCT a.name
+/*SELECT DISTINCT a.name
 FROM albums a
 JOIN albums_artists aa ON a.id = aa.album_id
 WHERE aa.artist_id IN (
@@ -73,8 +74,14 @@ WHERE aa.artist_id IN (
     FROM artists_genres ag
     GROUP BY ag.artists_id
     HAVING COUNT(DISTINCT ag.genre_id) > 1
-);
-
+);*/
+SELECT a.name FROM artists_genres ag 
+JOIN genres g  ON ag.genre_id = g.ID
+JOIN artists ar  ON ag.artists_id  = ar.ID
+JOIN albums_artists aa  ON aa.artist_id  = ar.Id
+JOIN albums a  ON aa.album_id  = a.id 
+GROUP BY a.name
+HAVING COUNT(DISTINCT g.name) > 1;
 -- Наименования треков, которые не входят в сборники
 SELECT t.name
 FROM tracks t
@@ -90,10 +97,20 @@ LEFT JOIN albums a ON aa.album_id = a.ID
 LEFT JOIN tracks t ON a.ID = t.album_id
 WHERE t.duration = (SELECT MIN(duration) FROM tracks);
 
--- Названия альбомов, содержащих наименьшее количество треков
-SELECT a.name
+--Названия альбомов, содержащих наименьшее количество треков
+--Можно было обойтись одним уровнем вложенности
+/*SELECT a.name
 FROM albums a
 JOIN (
     SELECT album_id, COUNT(*) FROM tracks GROUP BY album_id
 ) t ON a.ID = t.album_id
-WHERE t.count = (SELECT MIN(count) FROM (SELECT COUNT(*) as count FROM tracks GROUP BY album_id));
+WHERE t.count = (SELECT MIN(count) FROM (SELECT COUNT(*) as count FROM tracks GROUP BY album_id));*/
+SELECT a.name, COUNT(t.name) track_count FROM albums a
+JOIN tracks t ON a.ID = t.album_id
+GROUP BY a.ID
+HAVING COUNT(t.name) = (
+SELECT COUNT(t.name) FROM albums a
+JOIN tracks t ON a.ID = t.album_id
+GROUP BY a.ID
+ORDER BY COUNT(t.name)
+LIMIT 1);
